@@ -3,15 +3,13 @@ import json
 import logging
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import google.generativeai as genai
+from google import genai  # Nueva librería
 
 # 1. CONFIGURACIÓN INICIAL
-# Reemplaza con tu llave real obtenida en Google AI Studio
-API_KEY = os.environ.get("GEMINI_API_KEY")
-genai.configure(api_key=API_KEY)
+# La SDK nueva toma automáticamente GEMINI_API_KEY del entorno
+client = genai.Client()
+MODEL_ID = "gemini-1.5-flash" # O "gemini-3-flash-preview" si ya tienes acceso total
 
-# Configuración del modelo Gemini 1.5 Flash (económico y rápido)
-# Usamos 'system_instruction' para darle la personalidad y reglas que pediste
 instruction = (
     "Eres un asistente experto en el Contrato Colectivo de Trabajo (CCT) de Telmex. "
     "Tus respuestas deben ser claras, cortas y estrictamente basadas en el JSON proporcionado. "
@@ -20,57 +18,43 @@ instruction = (
     "Siempre que respondas algo sobre derechos, cita el texto tal cual aparece en el campo 'cita' o 'texto_exacto'."
 )
 
-model = genai.GenerativeModel(
-    model_name='gemini-1.5-flash',
-    system_instruction=instruction
-)
-
 # 2. INICIALIZAR FLASK
 app = Flask(__name__)
-CORS(app)  # Esto permite que tu HTML consulte al servidor sin bloqueos
-
-# Configurar logs para ver errores en la consola del servidor
+CORS(app)
 logging.basicConfig(level=logging.INFO)
 
 # 3. FUNCIÓN PARA CARGAR EL JSON
 def obtener_contexto():
     try:
-        # Buscamos el archivo en la misma ruta que este script
-        ruta_json = os.path.join(os.path.dirname(__file__), 'datos.json')
-        with open(ruta_json, 'r', encoding='utf-8') as f:
-            return json.dumps(json.load(f), ensure_ascii=False)
+        if os.path.exists('datos.json'):
+            with open('datos.json', 'r', encoding='utf-8') as f:
+                return json.dumps(json.load(f), ensure_ascii=False)
+        return None
     except Exception as e:
         logging.error(f"Error al leer datos.json: {e}")
         return None
 
-# 4. RUTAS DEL SERVIDOR
+# 4. RUTAS
 @app.route('/', methods=['GET'])
 def index():
-    return "Servidor de IA Telmex Activo y Corriendo."
+    return "Servidor Gemini 3 Activo."
 
 @app.route('/preguntar', methods=['POST'])
 def preguntar():
     try:
-        # Obtener la pregunta del HTML
         data = request.get_json()
         pregunta_usuario = data.get("pregunta")
-
-        if not pregunta_usuario:
-            return jsonify({"respuesta": "No enviaste ninguna pregunta."}), 400
-
-        # Obtener la base de conocimientos del JSON
         contexto = obtener_contexto()
-        if not contexto:
-            return jsonify({"respuesta": "Error: El servidor no pudo cargar la base de datos JSON."}), 500
 
-        # Construir el mensaje para la IA
-        # Le pasamos el JSON entero como contexto previo
-        prompt_final = f"BASE DE DATOS (JSON):\n{contexto}\n\nPREGUNTA DEL USUARIO: {pregunta_usuario}"
+        if not pregunta_usuario or not contexto:
+            return jsonify({"respuesta": "Error de configuración o pregunta vacía."}), 400
 
-        # Generar respuesta
-        response = model.generate_content(prompt_final)
-        
-        logging.info(f"Consulta procesada: {pregunta_usuario}")
+        # Nueva forma de generar contenido con la SDK 2.0
+        response = client.models.generate_content(
+            model=MODEL_ID,
+            contents=f"CONTEXTO CCT:\n{contexto}\n\nPREGUNTA:\n{pregunta_usuario}",
+            config={'system_instruction': instruction}
+        )
         
         return jsonify({
             "respuesta": response.text,
@@ -78,10 +62,8 @@ def preguntar():
         })
 
     except Exception as e:
-        logging.error(f"Error en el endpoint /preguntar: {e}")
-        return jsonify({"respuesta": "Hubo un error interno en el servidor.", "error": str(e)}), 500
+        logging.error(f"Error: {e}")
+        return jsonify({"respuesta": f"Error técnico: {str(e)}"}), 500
 
-# 5. EJECUCIÓN (Para Hostinger/Local)
 if __name__ == '__main__':
-    # Usamos el puerto 5000 por defecto
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000)
