@@ -7,7 +7,7 @@ import google.generativeai as genai
 
 # 1. CONFIGURACIÓN INICIAL
 # Reemplaza con tu llave real obtenida en Google AI Studio
-API_KEY = "TU_API_KEY_AQUI"
+API_KEY = os.environ.get("GEMINI_API_KEY")
 genai.configure(api_key=API_KEY)
 
 # Configuración del modelo Gemini 1.5 Flash (económico y rápido)
