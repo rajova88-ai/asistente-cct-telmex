@@ -1,0 +1,32 @@
+{
+  "contrato": "Contrato Colectivo de Trabajo Telmex 2024-2026",
+  "capitulos": {
+    "tiempo_extraordinario": {
+      "capitulo": "XIV",
+      "definicion": "CLAUSULA 79. Se considera como tiempo extra: a) El que exceda de la jornada reglamentaria... b) El que se trabaje en los días de descanso semanal, u obligatorio... c) El que se trabaje dentro del período de vacaciones y a solicitud de la Empresa.",
+      "computo": "CLAUSULA 80. Para computar el tiempo extra, las fracciones menores de media hora se considerarán como media hora.",
+      "pago_minimo": "CLAUSULA 81. La Empresa se obliga a pagar dos horas de tiempo extra como mínimo, a los trabajadores y las trabajadoras que llame a servicio fuera de sus horas ordinarias siempre y cuando esto no sea una continuación de la jornada.",
+      "forma_pago": "CLAUSULA 83. El tiempo extra de trabajo se pagará a los trabajadores y las trabajadoras invariablemente en efectivo, y en ningún caso se les compensará haciéndoles descansar."
+    },
+    "vacaciones": {
+      "capitulo": "XV",
+      "regla_general": "CLAUSULA 84. Los trabajadores y las trabajadoras disfrutarán de vacaciones anuales con goce de sueldo, en la fecha en que lo soliciten de acuerdo con la Empresa.",
+      "tabla_antiguedad": [
+        { "años": "1 a 2", "dias": 11, "cita": "a) De uno a dos años de servicio, 11 días." },
+        { "años": "3 a 5", "dias": 13, "cita": "b) De tres a cinco años de servicio, 13 días." },
+        { "años": "6 a 10", "dias": 16, "cita": "c) De seis a diez años de servicio, 16 días." },
+        { "años": "11 a 15", "dias": 21, "cita": "d) De once a quince años de servicio, 21 días." },
+        { "años": "16 a 20", "dias": 26, "cita": "e) De dieciséis a veinte años de servicio, 26 días." },
+        { "años": "21 o más", "dias": 31, "cita": "f) De veintiún años de servicio en adelante, 31 días." }
+      ],
+      "gastos_vacaciones": "CLAUSULA 84. La Empresa pagará... por concepto de gastos de vacaciones, un equivalente al 170% sobre los salarios correspondientes al período de vacaciones.",
+      "acumulacion": "CLAUSULA 90. Las vacaciones no son acumulables. A solicitud de los trabajadores la Empresa anticipará el salario correspondiente a las mismas... el día hábil que lo pidan dentro de la semana anterior."
+    },
+    "descansos": {
+      "capitulo": "XVI",
+      "dias_obligatorios": "CLAUSULA 91. Serán considerados como días de descanso obligatorio: 1° de enero, 5 de febrero, 18 y 21 de marzo, Jueves, viernes y sábado Santos, 1°, 5 y 10 de mayo, 1° de agosto (Día del Telefonista), 15 y 16 de septiembre, 12 de octubre, 2 y 20 de noviembre, 1° de diciembre (cada 6 años), 12 y 25 de diciembre.",
+      "prima_dominical": "CLAUSULA 97. Los trabajadores que presten su servicio en día domingo percibirán una prima adicional de un 90% sobre el salario de los días ordinarios de trabajo.",
+      "alimentos": "CLAUSULA 95. El tiempo para tomar alimentos será de 30 minutos en las jornadas que no sufran interrupción... se computará como tiempo efectivo de trabajo."
+    }
+  }
+}
