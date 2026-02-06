@@ -1,76 +1,71 @@
 import os
 import json
-import logging
-import requests
+import google.generativeai as genai
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 CORS(app)
 
-# 1. CARGAR DATOS DEL JSON
-def obtener_contexto():
-    try:
-        if os.path.exists('datos.json'):
-            with open('datos.json', 'r', encoding='utf-8') as f:
-                return json.dumps(json.load(f), ensure_ascii=False)
-        return "No hay datos disponibles."
-    except Exception as e:
-        return f"Error al leer JSON: {str(e)}"
+# 1. Configuración de API Key desde las variables de entorno de Render
+API_KEY = os.environ.get("GEMINI_API_KEY")
+genai.configure(api_key=API_KEY)
 
-# 2. RUTA PRINCIPAL (CHAT)
+# 2. Cargar tu archivo JSON (Contrato)
+def cargar_contexto_json(ruta_archivo):
+    try:
+        if os.path.exists(ruta_archivo):
+            with open(ruta_archivo, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        return {"error": "Archivo no encontrado"}
+    except Exception as e:
+        return {"error": str(e)}
+
+contexto_datos = cargar_contexto_json('datos.json')
+
+# 3. Configuración del Agente con tus REGLAS ESTRICTAS
+instrucciones_sistema = (
+    "Eres un asistente experto en el Contrato Colectivo de Trabajo (CCT) de Telmex. "
+    f"Tu base de conocimiento es estrictamente este JSON: {json.dumps(contexto_datos, ensure_ascii=False)}. "
+    "REGLAS OBLIGATORIAS: "
+    "1. No inventes nada. Si la información no está en el JSON, responde que no se encuentra en el contrato. "
+    "2. Si el usuario pregunta por vacaciones con 8 años de antigüedad (o cualquier otra), "
+    "debes decir que el contrato proporciona esos días, mencionar que la ley federal establece los mínimos, "
+    "y citar el texto exacto que aparezca en el documento."
+)
+
+# 4. Inicializar el modelo verificado en tu lista (gemini-flash-latest)
+model = genai.GenerativeModel(
+    model_name="gemini-flash-latest",
+    system_instruction=instrucciones_sistema
+)
+
+# Iniciamos el chat (sesión persistente por cada ejecución del servidor)
+chat_session = model.start_chat(history=[])
+
 @app.route('/preguntar', methods=['POST'])
 def preguntar():
-    api_key = os.environ.get("GEMINI_API_KEY")
-    data = request.get_json()
-    pregunta_usuario = data.get("pregunta", "")
-    contexto = obtener_contexto()
-
-    # Usamos Gemini 2.0 Flash (el más rápido y disponible según tu test)
-    url = f"https://generativelanguage.googleapis.com/v1/models/gemini-2.0-flash:generateContent?key={api_key}"
-    
-    headers = {'Content-Type': 'application/json'}
-    
-    # Configuramos el prompt con tus reglas de oro
-    prompt_sistema = (
-        "Eres un experto en el CCT de Telmex. "
-        "Responde de forma clara, corta y cita el texto exacto del JSON. "
-        "Si no está en el JSON, di que no se encuentra en el contrato. No inventes nada. "
-        f"CONTEXTO JSON: {contexto}"
-    )
-
-    payload = {
-        "contents": [{
-            "parts": [{
-                "text": f"{prompt_sistema}\n\nPregunta del usuario: {pregunta_usuario}"
-            }]
-        }],
-        "generationConfig": {
-            "temperature": 0.1,
-            "maxOutputTokens": 800
-        }
-    }
-
     try:
-        response = requests.post(url, headers=headers, json=payload)
-        res_data = response.json()
-
-        if response.status_code == 200:
-            # Extraemos la respuesta de la estructura de Google
-            texto_ia = res_data['candidates'][0]['content']['parts'][0]['text']
-            return jsonify({"respuesta": texto_ia, "status": "success"})
-        else:
-            return jsonify({"respuesta": "Error de la IA", "detalle": res_data}), response.status_code
-
+        data = request.get_json()
+        pregunta_usuario = data.get("pregunta", "")
+        
+        # Enviamos la pregunta usando la sesión de chat
+        response = chat_session.send_message(pregunta_usuario)
+        
+        return jsonify({
+            "respuesta": response.text,
+            "status": "success"
+        })
     except Exception as e:
-        return jsonify({"respuesta": "Error de conexión", "error": str(e)}), 500
+        # Si ocurre el error 429, el mensaje será claro
+        error_msg = str(e)
+        if "429" in error_msg:
+            return jsonify({"respuesta": "Límite de mensajes alcanzado. Espera un minuto."}), 429
+        return jsonify({"respuesta": "Error en el servidor", "detalle": error_msg}), 500
 
 @app.route('/')
 def home():
-    return "Servidor CCT Telmex con Gemini 2.0/2.5 Activo."
+    return "Servidor CCT Telmex (Gemini-Flash) Activo"
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     app.run(host='0.0.0.0', port=5000)
